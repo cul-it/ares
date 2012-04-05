@@ -1,0 +1,30 @@
+<?php
+
+require_once(dirname(__FILE__) . '/ares.module');
+
+/**
+ * Implementation of hook_install().
+ */
+function ares_install() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_query("CREATE TABLE {ares_location} (
+        alid int NOT NULL auto_increment,
+        name varchar(255) NOT NULL default '',
+        block tinyint NOT NULL default '0',
+        PRIMARY KEY (alid),
+        UNIQUE KEY title (name)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
+      break;
+  }
+  cache_all_courses();
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function ares_uninstall() {
+  db_query('DROP TABLE {ares_location}');
+}
+
