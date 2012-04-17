@@ -2,20 +2,20 @@ function getCleanValue(value) {
     if (value == null) {
       value = "";
     }
-    return value.replace(/^\s*|\s*$/g,'');
+    return value.replace(/^\s*|\s*jQuery/g,'');
 }
 
 function populate_course_selector(library, course, style) {
     //var library = Drupal.settings.ares.library
     var hideThis = "#course-spinner-" + library + "-" + style;
     var populateThis = "#edit-courselist-" + library + "-" + style;
-    var get_courses_url = $("#courselist-link-" + library + "-" + style).attr('href');
+    var get_courses_url = jQuery("#courselist-link-" + library + "-" + style).attr('href');
 
-    $(populateThis).append('<option value="0" selected="selected">----- Select a course -----</option>');
-    $.getJSON(get_courses_url, function(data) {
+    jQuery(populateThis).append('<option value="0" selected="selected">----- Select a course -----</option>');
+    jQuery.getJSON(get_courses_url, function(data) {
       if (data.courseList) {
           data.courseList.sort(sort_courses);
-          $.each(data.courseList, function(key, value) {
+          jQuery.each(data.courseList, function(key, value) {
             var displayName = value.displayCourseNumber + ': ' + value.courseName;
             if (value.displayCourseNumber == value.courseName) {
               displayName = value.displayCourseNumber;
@@ -25,10 +25,10 @@ function populate_course_selector(library, course, style) {
               displayName += ' (' + classCode + ')';
             }
             var inst =
-            $(populateThis).append($("<option></option>").attr("value", value.id).text(displayName));
+            jQuery(populateThis).append(jQuery("<option></option>").attr("value", value.id).text(displayName));
           });
 
-          $(populateThis).change(function () {
+          jQuery(populateThis).change(function () {
             if (style == 'inline') {
               ajax_class_selection(library, style);
             } else {
@@ -37,17 +37,17 @@ function populate_course_selector(library, course, style) {
           });
 
           // now the course selection control can be displayed
-          $(hideThis).attr('style', 'display: none');
-          $(populateThis).removeAttr('style');
+          jQuery(hideThis).attr('style', 'display: none');
+          jQuery(populateThis).removeAttr('style');
 
           // trigger the control if a course has already been selected in another request
           if (course) {
             select_course(library, course, style);
-            $(populateThis).change();
+            jQuery(populateThis).change();
           }
 
       } else {
-          $(hideThis).attr('style', 'display: none');
+          jQuery(hideThis).attr('style', 'display: none');
           populateThis.replaceWith("An error occured trying to display the list of courses.");
       }
     });
@@ -64,20 +64,20 @@ function sort_courses(a,b) {
 
 function select_course(library, course, style) {
   var selector = "#edit-courselist-" + library + "-" + style + " option";
-  $(selector + ":selected").removeAttr("selected");
-  $(selector).each( function() {
-      if ($(this).val() == course) {
-          $(this).attr('selected', 'selected');
+  jQuery(selector + ":selected").removeAttr("selected");
+  jQuery(selector).each( function() {
+      if (jQuery(this).val() == course) {
+          jQuery(this).attr('selected', 'selected');
       }
   });
 }
 
 function non_ajax_class_selection(library, style) {
   var selector = "#edit-courselist-" + library + "-" + style;
-  var items_base_url = $('form#courselist-form-' + library + "-" + style).attr('action') + "/" + library + "/course/";
-  if ($(selector + " option:selected").val() != '0') {
-      $(selector + " option:selected").each(function () {
-        var get_items_url = items_base_url + $(this).val();
+  var items_base_url = jQuery('form#courselist-form-' + library + "-" + style).attr('action') + "/" + library + "/course/";
+  if (jQuery(selector + " option:selected").val() != '0') {
+      jQuery(selector + " option:selected").each(function () {
+        var get_items_url = items_base_url + jQuery(this).val();
         window.location = get_items_url;
     });
   }
@@ -86,14 +86,14 @@ function non_ajax_class_selection(library, style) {
 
 //      var list_title = '';
 //      var selection_count = 0;
-//      $(selector + " option").each(function () {
-//        if ($(this).val() == selected_course) {
+//      jQuery(selector + " option").each(function () {
+//        if (jQuery(this).val() == selected_course) {
 //          if (selection_count > 0) {
 //            list_title += " | "
 //          }
-//          list_title += $(this).text();
-//          if ($(this).data('inst')) {
-//            list_title += ' (' + $(this).data('inst') + ')';
+//          list_title += jQuery(this).text();
+//          if (jQuery(this).data('inst')) {
+//            list_title += ' (' + jQuery(this).data('inst') + ')';
 //          }
 //          selection_count++;
 //        }
@@ -102,32 +102,32 @@ function non_ajax_class_selection(library, style) {
 
 function ajax_class_selection(library, style) {
   var selector = "#edit-courselist-" + library + "-" + style;
-  var items_base_url = $('#itemlist-link-' + library + "-" + style + "-items").attr('href');
-  var title_base_url = $('#itemlist-link-' + library + "-" + style + "-title").attr('href');
+  var items_base_url = jQuery('#itemlist-link-' + library + "-" + style + "-items").attr('href');
+  var title_base_url = jQuery('#itemlist-link-' + library + "-" + style + "-title").attr('href');
 
-  if ($(selector + " option:selected").val() != '0') {
+  if (jQuery(selector + " option:selected").val() != '0') {
 
       // hide previous display
       var items = "#reserve-items-" + library + "-" + style;
       var spinner = "#items-spinner-" + library + "-" + style;
       var body = "#course-reserves-" + library + "-" + style + " tbody";
 
-      $(items).attr('style', 'display: none');
-      $(spinner).removeAttr('style');
+      jQuery(items).attr('style', 'display: none');
+      jQuery(spinner).removeAttr('style');
 
       // get new display
-      $(selector + " option:selected").each(function () {
-        var get_items_url = items_base_url + $(this).val();
-        var get_title_url = title_base_url + library + '/' + $(this).val();
+      jQuery(selector + " option:selected").each(function () {
+        var get_items_url = items_base_url + jQuery(this).val();
+        var get_title_url = title_base_url + library + '/' + jQuery(this).val();
 
-        $(items + " h3").empty();
-        $.getJSON(get_title_url, function(data) {
-          $(items + " h3").text(data["value"]);
+        jQuery(items + " h3").empty();
+        jQuery.getJSON(get_title_url, function(data) {
+          jQuery(items + " h3").text(data["value"]);
         });
 
-        $.getJSON(get_items_url, function(data) {
-            $(body).empty();
-            $.each(data.reserveItemList, function(i, reserve) {
+        jQuery.getJSON(get_items_url, function(data) {
+            jQuery(body).empty();
+            jQuery.each(data.reserveItemList, function(i, reserve) {
                 var odd_even = 'odd';
                 ((i+1)%2) == 0  ? odd_even = 'even' : odd_even = 'odd';
 
@@ -169,13 +169,14 @@ function ajax_class_selection(library, style) {
                 }
 
                 output += '</tr>';
-                $(body).append(output);
+                jQuery(body).append(output);
           });
 
-          $(spinner).attr('style', 'display: none');
-          $(items).removeAttr('style');
-          $("#course-reserves-" + library + "-" + style).trigger("update");
+          jQuery(spinner).attr('style', 'display: none');
+          jQuery(items).removeAttr('style');
+          jQuery("#course-reserves-" + library + "-" + style).trigger("update");
        });
     });
   }
 }
+

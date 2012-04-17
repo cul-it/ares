@@ -11,10 +11,10 @@ function ares_init() {
 }
 
 /**
- * Implementation of hook_perm().
+ * Implementation of hook_permission().
  */
-function ares_perm() {
-  return array('administer ares module');
+function ares_permission() {
+  return array('Administer Ares' => array('title' => 'Administer Ares'));
 }
 
 
@@ -22,40 +22,41 @@ function ares_perm() {
  * Implementation of hook_menu().
  */
 function ares_menu() {
-  $items['admin/content/ares'] = array(
+  $items['admin/structure/ares'] = array(
     'title' => 'Ares Locations',
     'description' => "Configure which Ares locations to use on this site.",
     'page callback' => 'ares_admin_overview',
-    'access arguments' => array('administer ares module'),
+    'access arguments' => array('Administer Ares'),
+    'type' => MENU_NORMAL_ITEM,
     'file' => 'ares.admin.inc',
   );
-  $items['admin/content/ares/add'] = array(
+  $items['admin/structure/ares/add'] = array(
     'title' => 'Add Ares Location',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ares_form_location'),
-    'access arguments' => array('administer ares module'),
-    'type' => MENU_CALLBACK,
-    'parent' => 'admin/content/ares',
+    'access arguments' => array('Administer Ares'),
+    'type' => MENU_NORMAL_ITEM,
+    'parent' => 'admin/structure/ares',
     'file' => 'ares.admin.inc',
   );
-  $items['admin/content/ares/edit/%ares_location'] = array(
+  $items['admin/structure/ares/edit/%ares_location'] = array(
     'title' => 'Edit Ares Location',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('ares_form_location', 4),
-    'access arguments' => array('administer ares module'),
+    'access arguments' => array('Administer Ares'),
     'type' => MENU_CALLBACK,
-    'parent' => 'admin/content/ares',
+    'parent' => 'admin/structure/ares',
     'file' => 'ares.admin.inc',
   );
-  $items['ares/items/%'] = array(
-    'title' => '',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('ares_form_location', 2),
-    'access arguments' => array('administer ares module'),
-    'type' => MENU_CALLBACK,
-    'parent' => 'admin/content/ares',
-    'file' => 'ares.admin.inc',
-  );
+#  $items['ares/items/%'] = array(
+#    'title' => '',
+#    'page callback' => 'drupal_get_form',
+#    'page arguments' => array('ares_form_location', 2),
+#    'access arguments' => array('Administer Ares'),
+#    'type' => MENU_CALLBACK,
+#    'parent' => 'admin/structure/ares',
+#    'file' => 'ares.admin.inc',
+#  );
   $items['ares/get_courses_json/%'] = array(
     'title' => 'Get courses for a library as JSON data.',
     'page callback' => 'get_courses_json',
@@ -66,7 +67,7 @@ function ares_menu() {
   $items['ares/get_course_title_json/%/%'] = array(
     'title' => 'Get title and author information for a course as JSON data.',
     'page callback' => 'get_course_title_json',
-    'page arguments' => array(2,3),
+    'page arguments' => array(2, 3),
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );
@@ -99,42 +100,49 @@ function ares_menu() {
  */
 function ares_help($path, $arg) {
   switch ($path) {
-    case 'admin/content/ares':
-      $output .= '<p>'. t('Current Ares locations are listed below, and <a href="@addares">new Ares locations may be added</a>. For each Ares location, a block may be enabled at the <a href="@block">blocks administration page</a>.', array('@addares' => url('admin/content/ares/add'), '@block' => url('admin/build/block'))) .'</p>';
+    case 'admin/structure/ares':
+      return '<p>' . t('Current Ares locations are listed below, and <a href="@addares">new Ares locations may be added</a>. For each Ares location, a block may be enabled at the <a href="@block">blocks administration page</a>.', array('@addares' => url('admin/structure/ares/add'), '@block' => url('admin/structure/block'))) . '</p>';
   }
-  return $output;
 }
 
 /**
- * Implementation of hook_block().
- *
- * Generates blocks for the items in each Ares location.
+ * Implementation of hook_block_info().
  */
-function ares_block($op = 'list', $delta = 0, $edit = array()) {
-    if ($op == 'list') {
-      $result = db_query('SELECT alid, name FROM {ares_location} ORDER BY name');
-      while ($location = db_fetch_object($result)) {
-        $block['location-'. $location->alid . '-separate']['info'] = t('!name Library Ares reserves (results display separately)', array('!name' => ucwords(strtolower($location->name))));
-        $block['location-'. $location->alid . '-separate']['pages'] = 'ares/library/*';
-        $block['location-'. $location->alid . '-inline']['info'] = t('!name Library Ares reserves (results display inline)', array('!name' => ucwords(strtolower($location->name))));
-      }
+function ares_block_info() {
+    $blocks = array();
+    $result = db_query("SELECT alid, name FROM {ares_location} ORDER BY name");
+    foreach ($result as $location) {
+        $blocks['location-'. $location->alid . '-separate']['info'] = t('!name Library Ares reserves (results display separately)', array('!name' => ucwords(strtolower($location->name))));
+        $blocks['location-'. $location->alid . '-separate']['pages'] = 'ares/library/*';
+        $blocks['location-'. $location->alid . '-inline']['info'] = t('!name Library Ares reserves (results display inline)', array('!name' => ucwords(strtolower($location->name))));
     }
-    else if ($op == 'configure') {
-      list($type, $id, $style) = explode('-', $delta);
-      $value = db_result(db_query('SELECT block FROM {ares_location} WHERE alid = %d', $id));
-      return $form;
+    return $blocks;
+}
+
+
+/**
+ * Implementation of hook_block_save().
+ */
+function ares_block_save ($delta = '', $edit=array()) {
+    //$value = db_query("UPDATE {ares_location} SET block = :block WHERE alid = :alid", array(':block' => $edit['block'], ':alid' => $id))->fetchObject();
+    $value = db_update('block')
+               ->fields(array('block' => $edit['block']))
+               ->condition('alid', $id, '=')
+               ->execute();
+}
+
+
+/**
+ * Implementation of hook_block_view().
+ */
+function ares_block_view ($delta = '') {
+    list($type, $id, $style) = explode('-', $delta);
+    $location = db_query("SELECT alid, name, block FROM {ares_location} WHERE alid = :alid", array(':alid' => $id))->fetchObject();
+    if (isset($location->name)) {
+        $block['subject'] = check_plain(ucwords(strtolower($location->name)) . ' Course Reserves');
+        $block['content'] = ares_block_course_select($location->name, $style);
+        return $block;
     }
-    else if ($op == 'save') {
-        $value = db_query('UPDATE {ares_location} SET block = %d WHERE alid = %d', $edit['block'], $id);
-    }
-    else if ($op == 'view') {
-          list($type, $id, $style) = explode('-', $delta);
-          if ($location = db_fetch_object(db_query('SELECT alid, name, block FROM {ares_location} WHERE alid = %d', $id))) {
-            $block['subject'] = check_plain(ucwords(strtolower($location->name)) . ' Course Reserves');
-            $block['content'] = ares_block_course_select($location->name, $style);
-          }
-      }
-      return $block;
 }
 
 
@@ -149,7 +157,7 @@ function ares_block($op = 'list', $delta = 0, $edit = array()) {
 function ares_location_load($alid) {
   static $ares_locations;
   if (!isset($ares_locations[$alid])) {
-    $ares_locations[$alid] = db_fetch_array(db_query('SELECT * FROM {ares_location} WHERE alid = %d', $alid));
+    $ares_locations[$alid] = db_query("SELECT * FROM {ares_location} WHERE alid = :alid", array(':alid' => $alid))->fetchObject();
   }
   return $ares_locations[$alid];
 }
@@ -161,25 +169,36 @@ function ares_location_load($alid) {
  *   An associative array describing the location to be added/edited/deleted.
  */
 function ares_save_location($edit) {
-  $link_path = 'admin/content/ares/edit/location/';
+  $link_path = 'admin/structure/ares/edit/location/';
   if (!empty($edit['alid'])) {
     $link_path .= $edit['alid'];
     if (!empty($edit['name'])) {
-      db_query("UPDATE {ares_location} SET name = '%s' WHERE alid = %d", $edit['name'], $edit['alid']);
+      //db_query("UPDATE {ares_location} SET name = ':name' WHERE alid = :alid", array(':name' => $edit['name'], ':alid' => $edit['alid']));
+      db_update('ares_location')
+        ->fields(array('name' => $edit['name']))
+        ->condition('alid', $edit['alid'])
+        ->execute();
       $op = 'update';
     }
     else {
-      db_query('DELETE FROM {ares_location} WHERE alid = %d', $edit['alid']);
+      //db_query("DELETE FROM {ares_location} WHERE alid = :alid", array(':alid' => $edit['alid']));
+      db_delete('ares_location')->condition('alid', $edit['alid'])->execute();
       // Make sure there is no active block for this location.
-      db_query("DELETE FROM {blocks} WHERE module = '%s' AND delta = '%s'", 'ares', 'location-' . $edit['alid']);
+      //db_query("DELETE FROM {blocks} WHERE module = ':module' AND delta = ':delta'", array(':module' => 'ares', ':delta' => 'location-' . $edit['alid']));
+      db_delete('block')
+        ->condition(db_and()->condition('module', 'ares')->condition('delta', 'location-' . $edit['alid']))
+        ->execute();
       $edit['name'] = '';
       $op = 'delete';
     }
   }
   else if (!empty($edit['name'])) {
     // A single unique id for bundles and feeds, to use in blocks
-    db_query("INSERT INTO {ares_location} (name, block) VALUES ('%s', 5)", $edit['name']);
-    $link_path .= db_last_insert_id('ares_location', 'alid');
+    $id = db_insert('ares_location')
+            ->fields(array('name'  => $edit['name'],
+                           'block' => 5))
+            ->execute();
+    $link_path .= $id;
     $op = 'insert';
   }
 }
@@ -259,18 +278,16 @@ HERE;
 function ares_output_unobtrusive_js($library, $course=NULL, $style='inline') {
   drupal_add_js(drupal_get_path('module', 'ares') . '/ares.js');
   drupal_add_js(drupal_get_path('module', 'ares') . '/jquery.tablesorter.min.js');
- 
+
   #drupal_add_js(array('ares' => array('library' => $library)), 'setting');
     $output = <<<HERE
         <script>
-        if (Drupal.jsEnabled) {
           // document.ready() slows page loading
           //$(document).ready(function () {
-          $(window).load(function () {
+          jQuery(window).load(function () {
             populate_course_selector("$library", "$course", "$style");
-            $("#course-reserves-$library-$style").tablesorter({sortList: [[0,0]] , widgets:["zebra"]});
+            jQuery("#course-reserves-$library-$style").tablesorter({sortList: [[0,0]] , widgets:["zebra"]});
           });
-        }
         </script>
 HERE;
     return $output;
@@ -308,7 +325,7 @@ function get_course_title_json($library, $course) {
     $cid = 'ares_courses_' . $library;
     $url = $courses_url . $library;
     $ares_course_title_json = get_and_cache_json($cid, $url);
-    
+
     $json = '';
     $course_cid = 'ares_course_title_' . $course;
     if (($cached = cache_get($course_cid, 'cache')) && ! empty($cached->data) && ! $refresh) {

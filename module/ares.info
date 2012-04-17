@@ -1,7 +1,11 @@
 ; $Id$
 name = "Ares"
 description = "Ares course reserves related functionality. (Initially at least, will rely on John Fereira's Ares Web Services.)"
-core = 6.x
+core = 7.x
 php = 5.x
 package = Cornell University Library
 dependencies[] = cul_common
+
+
+files[] = ares.admin.inc
+
