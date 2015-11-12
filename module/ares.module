@@ -125,7 +125,7 @@ function ares_block_info() {
  */
 function ares_block_save ($delta = '', $edit=array()) {
     //$value = db_query("UPDATE {ares_location} SET block = :block WHERE alid = :alid", array(':block' => $edit['block'], ':alid' => $id))->fetchObject();
-    $value = db_update('block')
+    $value = db_update('ares_location')
                ->fields(array('block' => $edit['block']))
                ->condition('alid', $id, '=')
                ->execute();
@@ -377,4 +377,3 @@ function ares_cron() {
   cache_all_courses();
   cache_all_libraries();
 }
-
