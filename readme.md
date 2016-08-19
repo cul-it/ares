@@ -1,4 +1,4 @@
-## ares-module
+## ares-module - drupal module for ares
 
 Adam Smith (ajs17@cornell.edu)
 May 2010
