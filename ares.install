@@ -1,30 +1,38 @@
 <?php
 
-require_once(dirname(__FILE__) . '/ares.module');
-
 /**
- * Implementation of hook_install().
+ * Implementation of hook_schema().
  */
-function ares_install() {
-  switch ($GLOBALS['db_type']) {
-    case 'mysql':
-    case 'mysqli':
-      db_query("CREATE TABLE {ares_location} (
-        alid int NOT NULL auto_increment,
-        name varchar(255) NOT NULL default '',
-        block tinyint NOT NULL default '0',
-        PRIMARY KEY (alid),
-        UNIQUE KEY title (name)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-      break;
-  }
-  cache_all_courses();
-}
-
-/**
- * Implementation of hook_uninstall().
- */
-function ares_uninstall() {
-  db_query('DROP TABLE {ares_location}');
+function ares_schema() {
+    $schema['ares_location'] = array(
+    'fields' => array(
+        'alid' => array(
+            'type' => 'serial',
+            'length' => 12,
+            'not null' => TRUE,
+            'description' => 'Ares location ID.',
+         ),
+        'name' => array(
+            'type' => 'varchar',
+            'length' => 255,
+            'not null' => TRUE,
+            'default' => '',
+            'description' => 'Ares location name.',
+         ),
+         'block' => array(
+            'type' => 'int',
+            'size' => 'tiny',
+            'length' => 50,
+            'not null' => TRUE,
+            'default' => 0,
+            'description' => 'Block ID.',
+         ),
+     ),
+     'indexes' => array(
+        'name' => array('name'),
+     ),
+     'primary key' => array('alid',),
+    );
+    return $schema;
 }
 
