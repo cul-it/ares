@@ -203,4 +203,26 @@ jQuery(document).ready(function(){
       this.input.form.submit();
     }
   };
+  // Following taken from https://www.drupal.org/node/309088
+  Drupal.jsAC.prototype.onkeydown = function(input, e) {
+    if (!e) {
+      e = window.event;
+    }
+    switch (e.keyCode) {
+      case 13: // Enter
+        if (jQuery(input).hasClass('auto_submit')) {
+          this.hidePopup(e.keyCode);
+          this.input.form.submit();
+        }
+        return true;
+      case 40: // down arrow
+        this.selectDown();
+        return false;
+      case 38: // up arrow
+        this.selectUp();
+        return false;
+      default:
+        return true;
+    }
+  };
 });

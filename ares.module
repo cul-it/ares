@@ -8,6 +8,7 @@ require_once(dirname(__FILE__) . '/common.php');
  */
 function ares_init() {
   drupal_add_css(drupal_get_path('module', 'ares') . '/table_skins/cu/ares-table-cu-style.css');
+  drupal_add_js(drupal_get_path('module', 'ares') . '/ares.js'); // added here so it works on home page too
 }
 
 /**
