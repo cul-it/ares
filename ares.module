@@ -428,7 +428,7 @@ function ares_search_form($form, &$form_state) {
     //'#default_value' => 'peanut butter',
     '#size' => 15,
     '#maxlength' => 255,
-    '#prefix' => '<label class="sr-only" for="reserves_search_box">Search course reserves</label>'
+    '#prefix' => '<label class="sr-only" for="search_box">Search course reserves</label>'
   );
   
   $form['submit'] = array(
