@@ -423,7 +423,6 @@ function ares_search_form($form, &$form_state) {
     '#type' => 'textfield',
     '#id' => 'search_box',
     '#name' => 'search_box',
-    '#aria-label' => 'Search course reserves',
     '#autocomplete_path' => 'ares/autocomplete',
     '#attributes' => array('class'=> array('auto_submit')),
     //'#default_value' => 'peanut butter',
