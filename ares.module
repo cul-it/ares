@@ -414,10 +414,6 @@ function ares_cron() {
 /****************** Search field functionality ****************/
 
 function ares_search_form($form, &$form_state) {
-  $form['description'] = array(
-    '#type' => 'item',
-    '#title' => t('Search course reserves'),
-  );
   
   $form['search_box'] = array(
     '#type' => 'textfield',
