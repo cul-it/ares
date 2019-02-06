@@ -113,23 +113,23 @@ ____________________________________________
 Web Services description
 
 This module relies on Web services maintained by John Fereira at Mann Library:
-  http://mannservices.mannlib.cornell.edu/LibServices
+  http://api.library.cornell.edu/LibServices
 
 For course reserves information, these Web Services communicate with the Ares
 system. The following are sample calls to those services.
 
 To view a list of available library locations:
-  http://mannservices.mannlib.cornell.edu/LibServices/showLocationInfo.do?output=json
+  http://api.library.cornell.edu/LibServices/showLocationInfo.do?output=json
 
 The 'shortName' values from this output can then be used to request a list of
 courses associated with that library location:
-  http://mannservices.mannlib.cornell.edu/LibServices/showCourseReserveList.do?output=json&library=Music
+  http://api.library.cornell.edu/LibServices/showCourseReserveList.do?output=json&library=Music
 
 Note that in addition to the library locations returned by the showLocationInfo
 service, there is also an 'ALL' shortName that returns all courses for all
 library locations:
-  http://mannservices.mannlib.cornell.edu/LibServices/showCourseReserveList.do?output=json&library=ALL
+  http://api.library.cornell.edu/LibServices/showCourseReserveList.do?output=json&library=ALL
 
 Finally, the 'courseNumber' value retrieved from the course list service can be
 used to request the reserve items for that course:
-  http://mannservices.mannlib.cornell.edu/LibServices/showCourseReserveItemInfo.do?output=json&courseid=84
+  http://api.library.cornell.edu/LibServices/showCourseReserveItemInfo.do?output=json&courseid=84
