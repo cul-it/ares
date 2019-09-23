@@ -430,7 +430,7 @@ function ares_search_form($form, &$form_state) {
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Search'),
-    '#attributes' => array('#class' => 'go')
+    '#attributes' => array('class' => 'go')
   );
   
   return $form;
