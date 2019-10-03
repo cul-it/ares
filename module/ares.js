@@ -152,7 +152,8 @@ function ajax_class_selection(library, style) {
                 // BLACKBOARD LINK OR LIBRARY AND CALLNUMBER
                 output += '   <td class="ares-location-complete">';
                 if (reserve.status.toUpperCase().indexOf("ELECTRONIC") != -1) {
-                  output += '<p class="electronic">Electronic Access: <a href="http://blackboard.cornell.edu/#aresid=' + reserve.id + '">Click here to find electronic reserve readings in Blackboard</a></p>';
+                  output += '<p class="electronic">Electronic Access: Find electronic reserve readings in the Blackboard or Canvas page for your course.</p>';
+                  // output += '<p class="electronic">Electronic Access: <a href="http://blackboard.cornell.edu/#aresid=' + reserve.id + '">Click here to find electronic reserve readings in Blackboard</a></p>';
                 } else {
                   if (reserve.location != '' && reserve.location != '?') {
                     output += '<p class="ares-location">' + reserve.location + '&nbsp;</p>';
