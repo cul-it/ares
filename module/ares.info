@@ -4,6 +4,6 @@ description = "Ares course reserves related functionality. (Initially at least, 
 core = 7.x
 php = 5.x
 package = Cornell University Library
-version = "7.x-1.5"
+version = "7.x-1.6"
 
 files[] = ares.admin.inc
