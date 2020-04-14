@@ -235,7 +235,8 @@ function ares_save_location($edit) {
 function ares_page($library='ALL', $course=NULL) {
   $style='inline';
 
-  $output = drupal_render(drupal_get_form('ares_search_form'));
+  $form = drupal_get_form('ares_search_form');
+  $output = drupal_render($form); // pass by reference
   $output .= ares_output_course_select($library, $style);
   $output .= ares_output_course_items($library, $style);
   $output .= ares_output_unobtrusive_js($library, $course, $style);
