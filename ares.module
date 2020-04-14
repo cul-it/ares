@@ -267,9 +267,9 @@ circulate physical materials or supply new scanning or digitization services for
 the Cornell Library, we are still able to supply many items electronically.</strong> If a physical-only
 reserve item shown here is needed for your course it may also be available as an e-resource
 via the
-<a href="https://www.library.cornell.edu" title="library catalog web site">Library Catalog</a>.
+<a href="https://www.library.cornell.edu" aria-label="library catalog web site">Library Catalog</a>.
 E-books may also be requested via the
-<a href="https://www.library.cornell.edu/services/request/recommend" title="web form for requesting an e-book purcase">Recommend A Purchase</a> form.
+<a href="https://www.library.cornell.edu/services/request/recommend" aria-label="web form for requesting an e-book purcase">Recommend A Purchase</a> form.
 </div>
 <a href="$submit_url" id="courselist-link-$library-$style"></a>
 <form action="$form_url" accept-charset="UTF-8" method="get"
