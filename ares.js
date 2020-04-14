@@ -180,7 +180,8 @@ function ajax_class_selection(library, style) {
                   formattedDate = reserve.dueDate;
 
                 if (reserve.status.toUpperCase().indexOf("ELECTRONIC") == -1) {
-                  output += '   <td class="ares-status"><span class="available">' + formattedDate + '</span></td>';
+                  //output += '   <td class="ares-status"><span class="available">' + formattedDate + '</span></td>';
+                  output += '   <td class="ares-status"><span class="unavailable">CURRENTLY UNAVAILABLE DUE TO LIBRARY CLOSURE</span></td>';
                 } else {
                   output += '   <td class="ares-status"></td>';
                 }
