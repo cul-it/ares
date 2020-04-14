@@ -258,6 +258,17 @@ function ares_output_course_select($library, $style) {
   $submit_url = url('ares/get_courses_json/' . $library);
   $form_url = url('ares/library');
   $output = <<<HERE
+<div id="emergency-message">
+NOTE: Gov. Cuomo has mandated that staff stay home from all non-essential businesses in
+the state of New York, which applies to all of our libraries. <strong>Although we are no longer able to
+circulate physical materials or supply new scanning or digitization services for items held in
+the Cornell Library, we are still able to supply many items electronically.</strong> If a physical-only
+reserve item shown here is needed for your course it may also be available as an e-resource
+via the
+<a href="https://www.library.cornell.edu" title="library catalog web site">Library Catalog</a>.
+E-books may also be requested via the
+<a href="https://www.library.cornell.edu/services/request/recommend" title="web form for requesting an e-book purcase">Recommend A Purchase</a> form.
+</div>
 <a href="$submit_url" id="courselist-link-$library-$style"></a>
 <form action="$form_url" accept-charset="UTF-8" method="get"
       id="courselist-form-$library-$style" class="courselist-form">
