@@ -20,7 +20,7 @@ function populate_course_selector(library, course, style) {
             if (value.displayCourseNumber == value.courseName) {
               displayName = value.displayCourseNumber;
             }
-            var classCode = getCleanValue(courseCode);
+            var classCode = getCleanValue(value.courseCode);
             if (classCode != '') {
               displayName += ' (' + classCode + ')';
             }
