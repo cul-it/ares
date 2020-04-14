@@ -20,7 +20,7 @@ function populate_course_selector(library, course, style) {
             if (value.displayCourseNumber == value.courseName) {
               displayName = value.displayCourseNumber;
             }
-            var classCode = getCleanValue(classCode);
+            var classCode = getCleanValue(value.courseCode);
             if (classCode != '') {
               displayName += ' (' + classCode + ')';
             }
@@ -55,8 +55,8 @@ function populate_course_selector(library, course, style) {
 }
 
 function sort_courses(a,b) {
-  var astring = a.displayCourseNumber.toLowerCase().split(' ').join('') + getCleanValue(a.classCode).toLowerCase().split(' ').join('');
-  var bstring = b.displayCourseNumber.toLowerCase().split(' ').join('') + getCleanValue(b.classCode).toLowerCase().split(' ').join('');
+  var astring = a.displayCourseNumber.toLowerCase().split(' ').join('') + getCleanValue(a.courseCode).toLowerCase().split(' ').join('');
+  var bstring = b.displayCourseNumber.toLowerCase().split(' ').join('') + getCleanValue(b.courseCode).toLowerCase().split(' ').join('');
   if (astring < bstring) {return -1}
   if (astring > bstring) {return 1}
   return 0;
@@ -171,14 +171,14 @@ function ajax_class_selection(library, style) {
                 reserve.dueDate = reserve.dueDate.replace(/(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2}).*/, '$2/$3/$1 $4');
                 var formattableDate = moment(reserve.dueDate);
                 var formattedDate;
-                
+
                 if (formattableDate.isValid())
-                  formattedDate = moment(reserve.dueDate).format('ddd, M/D/YY [ &nbsp;&nbsp; ] h:mm A');  
+                  formattedDate = moment(reserve.dueDate).format('ddd, M/D/YY [ &nbsp;&nbsp; ] h:mm A');
                 else
                   // If formattableDate is *not* a valid date, then it's probably a status
                   // message like 'Available' that should be passed through without alteration.
                   formattedDate = reserve.dueDate;
-                
+
                 if (reserve.status.toUpperCase().indexOf("ELECTRONIC") == -1) {
                   output += '   <td class="ares-status"><span class="available">' + formattedDate + '</span></td>';
                 } else {

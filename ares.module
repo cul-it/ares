@@ -9,6 +9,7 @@ require_once(dirname(__FILE__) . '/common.php');
 function ares_init() {
   if (drupal_is_front_page()) {
     drupal_add_css(drupal_get_path('module', 'ares') . '/table_skins/cu/ares-table-cu-style.css');
+    drupal_add_css(drupal_get_path('module', 'ares') . '/ares.css');
     drupal_add_js(drupal_get_path('module', 'ares') . '/ares.js'); // added here so it works on home page too
   }
 }
@@ -109,7 +110,7 @@ function ares_menu() {
      'access arguments' => array('access content'),
      'type' => MENU_CALLBACK,
   );
-  
+
   return $items;
 }
 
@@ -135,7 +136,7 @@ function ares_block_info() {
         $blocks['location-'. $location->alid . '-inline']['info'] = t('!name Library Ares reserves (results display inline)', array('!name' => ucwords(strtolower($location->name))));
     }
     $blocks['ares-front-page']['info'] = t('Front-page block for Ares course search');
-    
+
     return $blocks;
 }
 
@@ -156,7 +157,7 @@ function ares_block_save ($delta = '', $edit=array()) {
  * Implementation of hook_block_view().
  */
 function ares_block_view ($delta = '') {
-  
+
     if ($delta == 'ares-front-page') {
       $block['title'] = 'Courses';
       $block['content'] = drupal_get_form('ares_search_form');
@@ -234,12 +235,13 @@ function ares_save_location($edit) {
 
 function ares_page($library='ALL', $course=NULL) {
   $style='inline';
-  
-  $output = drupal_render(drupal_get_form('ares_search_form'));
+
+  $form = drupal_get_form('ares_search_form');
+  $output = drupal_render($form); // pass by reference
   $output .= ares_output_course_select($library, $style);
   $output .= ares_output_course_items($library, $style);
   $output .= ares_output_unobtrusive_js($library, $course, $style);
-  
+
   return $output;
 }
 
@@ -258,6 +260,17 @@ function ares_output_course_select($library, $style) {
   $submit_url = url('ares/get_courses_json/' . $library);
   $form_url = url('ares/library');
   $output = <<<HERE
+<div id="emergency-message">
+NOTE: Gov. Cuomo has mandated that staff stay home from all non-essential businesses in
+the state of New York, which applies to all of our libraries. <strong>Although we are no longer able to
+circulate physical materials or supply new scanning or digitization services for items held in
+the Cornell Library, we are still able to supply many items electronically.</strong> If a physical-only
+reserve item shown here is needed for your course it may also be available as an e-resource
+via the
+<a href="https://www.library.cornell.edu" aria-label="library catalog web site">Library Catalog</a>.
+E-books may also be requested via the
+<a href="https://www.library.cornell.edu/services/request/recommend" aria-label="web form for requesting an e-book purcase">Recommend A Purchase</a> form.
+</div>
 <a href="$submit_url" id="courselist-link-$library-$style"></a>
 <form action="$form_url" accept-charset="UTF-8" method="get"
       id="courselist-form-$library-$style" class="courselist-form">
@@ -371,15 +384,15 @@ function get_course_title_json($library, $course) {
         $course_title = '';
         if ($acourse->{"id"} == $course) {
           $course_title .= $acourse->{"displayCourseNumber"} . ': ' . $acourse->{"courseName"};
-          if (trim($acourse->{"classCode"}) != '') {
-            $course_title .= '<div>Section ' . $acourse->{"classCode"} . '</div>';
+          if (trim($acourse->{"courseCode"}) != '') {
+            $course_title .= '<div>Section ' . $acourse->{"courseCode"} . '</div>';
           }
           if (trim($acourse->{"instructor"}) != '') {
             $course_title .= '<div>Instructor: ' . $acourse->{"instructor"} . '</div>';
           }
         }
         if ($course_title != '') {
-          $course_titles[strtoupper(trim($acourse->{"displayCourseNumber"})) . strtoupper(trim($acourse->{"classCode"}))] = $course_title;
+          $course_titles[strtoupper(trim($acourse->{"displayCourseNumber"})) . strtoupper(trim($acourse->{"courseCode"}))] = $course_title;
         }
       }
       ksort($course_titles);
@@ -414,7 +427,7 @@ function ares_cron() {
 /****************** Search field functionality ****************/
 
 function ares_search_form($form, &$form_state) {
-  
+
   $form['search_box'] = array(
     '#type' => 'textfield',
     '#id' => 'search_box',
@@ -426,19 +439,19 @@ function ares_search_form($form, &$form_state) {
     '#maxlength' => 255,
     '#prefix' => '<label class="sr-only" for="search_box">Search course reserves</label>'
   );
-  
+
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Search'),
     '#attributes' => array('class' => array('go')),
   );
-  
+
   return $form;
 }
 
 function ares_search_form_validate($form, &$form_state) {
    if ($form_state['values']['search_box'] == '') {
-      form_set_error('search_box', t('This field cannot be empty.'));
+      form_set_error('search_box', t('This search field cannot be empty.'));
       $form_state['rebuild'] = TRUE;
    }
 }
@@ -458,23 +471,23 @@ function ares_search_list($query) {
 Please check that you have correctly entered the course number, course name, or instructor. If reserve requests have been submitted, they may be in-progress and show up here shortly. If you or your instructor are expecting reserve items to be available now for this course, please <a href="mailto:culreserves-l@cornell.edu">notify us</a>.', 'error');
   }
   elseif (count($courses) > 1) {
-    
+
     usort($courses, '_ares_sort_course_names');
     $displayCourseId = $courses[0]->id;
-    
-    # This code is used to create links to alternate sections for the user. 
-    # Since the first course in the list is already displayed as the primary 
+
+    # This code is used to create links to alternate sections for the user.
+    # Since the first course in the list is already displayed as the primary
     # result, there's no need to link to it here.
     array_shift($courses);
-    
+
     $sectionLinks = array();
     foreach ($courses as $course) {
-      $sectionQuery = $course->displayCourseNumber . '.' . $course->classCode;
+      $sectionQuery = $course->displayCourseNumber . '.' . $course->courseCode;
       $link = "<a href=\"/ares/search/$sectionQuery\">";
       $link .= $course->displayCourseNumber;
-      if ($course->classCode && $course->classCode != ' ') {
-        $link .= '.' . $course->classCode;
-      } 
+      if ($course->courseCode && $course->courseCode != ' ') {
+        $link .= '.' . $course->courseCode;
+      }
       else {
         #$sectionLinks .= '.---';
       }
@@ -491,14 +504,14 @@ Please check that you have correctly entered the course number, course name, or 
     $messageText .= '</ul>';
     drupal_set_message($messageText, 'warning');
   }
-  
+
   return ares_page('all', $displayCourseId);
 
 }
 
 /*
  * This function is called both by the main search menu callback (ares_search_list)
- * and the autocomplete function (ares_autocomplete). It looks for matches of 
+ * and the autocomplete function (ares_autocomplete). It looks for matches of
  * $query with course titles, numbers, departments, or instructors
  */
 function ares_search_reserves($query) {
@@ -512,30 +525,30 @@ function ares_search_reserves($query) {
   $data = json_decode($data);
   $results = array();
   foreach ($data->courseList as $course) {
-    
+
     $fullCourseTitle = $course->displayCourseNumber . ': ' . $course->courseName;
-    $sectionCourseTitle = $course->displayCourseNumber . '.' . $course->classCode;
-    
-    # course numbers are in the form ABCD 1234, but people might type in 
+    $sectionCourseTitle = $course->displayCourseNumber . '.' . $course->courseCode;
+
+    # course numbers are in the form ABCD 1234, but people might type in
     # ABCD1234 without the space. Find hits for both
     $spacelessCourseNumber = str_replace(' ', '', $course->displayCourseNumber);
     $spacelessQuery = str_replace(' ', '', $query);
     $extendedCourseInfo = _ares_make_extended_course_name($course);
-    
+
     if ((stripos($course->courseName, $query) !== FALSE) ||
         (stripos($spacelessCourseNumber, $spacelessQuery) !== FALSE) ||
         # It's very unlikely that anyone will type in a full course number and
         # name, but this next line helps when a user selects an autocomplete option
         # to search on.
         (stripos($fullCourseTitle, $query) !== FALSE) ||
-        
+
         # similarly, we need the extended course name with section and instructor
         # info to match the new autocomplete list format
         (stripos($extendedCourseInfo, $query) !== FALSE) ||
-        
+
         # and now they want to be able to handle a course name AND section
         (stripos($sectionCourseTitle, $query) !== FALSE) ||
-        
+
         (stripos($course->courseNumber, $query) !== FALSE) ||
         (stripos($course->instructor, $query) !== FALSE) ||
         (stripos($course->department, $query) !== FALSE)) {
@@ -568,14 +581,14 @@ function ares_autocomplete($query) {
  * ENGL 1147: Writing About Stuff [Sec. 102: Smythe]
  */
 function _ares_make_extended_course_name($course) {
-  
+
   $combinedCourseName = $course->displayCourseNumber . ': ' . $course->courseName;
-  
+
   // Add section number and instructor, if available, to distinguish identical
   // course numbers
   $additional_id = '';
-  if ($course->classCode and $course->classCode != ' ') {
-    $additional_id = 'Sec ' . $course->classCode;
+  if ($course->courseCode and $course->courseCode != ' ') {
+    $additional_id = 'Sec ' . $course->courseCode;
   }
   if ($course->instructor and $course->instructor != ' ') {
     if ($additional_id != '') {
@@ -587,7 +600,7 @@ function _ares_make_extended_course_name($course) {
   if ($additional_id != '') {
     $additional_id = "[$additional_id]";
   }
-  
+
   return $combinedCourseName . ' ' . $additional_id;
 }
 
@@ -595,9 +608,9 @@ function _ares_make_extended_course_name($course) {
 function _ares_sort_course_names($a, $b) {
   $aName = $a->displayCourseNumber;
   $bName = $b->displayCourseNumber;
-  $aSection = $a->classCode;
-  $bSection = $b->classCode;
-  
+  $aSection = $a->courseCode;
+  $bSection = $b->courseCode;
+
   if ($aName == $bName) {
     if ($aSection == $bSection) { return 0; }
     return ($aSection < $bSection) ? -1 : 1;
