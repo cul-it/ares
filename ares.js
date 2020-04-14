@@ -20,7 +20,7 @@ function populate_course_selector(library, course, style) {
             if (value.displayCourseNumber == value.courseName) {
               displayName = value.displayCourseNumber;
             }
-            var classCode = getCleanValue(classCode);
+            var classCode = getCleanValue(courseCode);
             if (classCode != '') {
               displayName += ' (' + classCode + ')';
             }
@@ -55,8 +55,8 @@ function populate_course_selector(library, course, style) {
 }
 
 function sort_courses(a,b) {
-  var astring = a.displayCourseNumber.toLowerCase().split(' ').join('') + getCleanValue(a.classCode).toLowerCase().split(' ').join('');
-  var bstring = b.displayCourseNumber.toLowerCase().split(' ').join('') + getCleanValue(b.classCode).toLowerCase().split(' ').join('');
+  var astring = a.displayCourseNumber.toLowerCase().split(' ').join('') + getCleanValue(a.courseCode).toLowerCase().split(' ').join('');
+  var bstring = b.displayCourseNumber.toLowerCase().split(' ').join('') + getCleanValue(b.courseCode).toLowerCase().split(' ').join('');
   if (astring < bstring) {return -1}
   if (astring > bstring) {return 1}
   return 0;
