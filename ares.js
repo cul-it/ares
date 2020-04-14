@@ -171,14 +171,14 @@ function ajax_class_selection(library, style) {
                 reserve.dueDate = reserve.dueDate.replace(/(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2}).*/, '$2/$3/$1 $4');
                 var formattableDate = moment(reserve.dueDate);
                 var formattedDate;
-                
+
                 if (formattableDate.isValid())
-                  formattedDate = moment(reserve.dueDate).format('ddd, M/D/YY [ &nbsp;&nbsp; ] h:mm A');  
+                  formattedDate = moment(reserve.dueDate).format('ddd, M/D/YY [ &nbsp;&nbsp; ] h:mm A');
                 else
                   // If formattableDate is *not* a valid date, then it's probably a status
                   // message like 'Available' that should be passed through without alteration.
                   formattedDate = reserve.dueDate;
-                
+
                 if (reserve.status.toUpperCase().indexOf("ELECTRONIC") == -1) {
                   output += '   <td class="ares-status"><span class="available">' + formattedDate + '</span></td>';
                 } else {

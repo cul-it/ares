@@ -109,7 +109,7 @@ function ares_menu() {
      'access arguments' => array('access content'),
      'type' => MENU_CALLBACK,
   );
-  
+
   return $items;
 }
 
@@ -135,7 +135,7 @@ function ares_block_info() {
         $blocks['location-'. $location->alid . '-inline']['info'] = t('!name Library Ares reserves (results display inline)', array('!name' => ucwords(strtolower($location->name))));
     }
     $blocks['ares-front-page']['info'] = t('Front-page block for Ares course search');
-    
+
     return $blocks;
 }
 
@@ -156,7 +156,7 @@ function ares_block_save ($delta = '', $edit=array()) {
  * Implementation of hook_block_view().
  */
 function ares_block_view ($delta = '') {
-  
+
     if ($delta == 'ares-front-page') {
       $block['title'] = 'Courses';
       $block['content'] = drupal_get_form('ares_search_form');
@@ -234,12 +234,12 @@ function ares_save_location($edit) {
 
 function ares_page($library='ALL', $course=NULL) {
   $style='inline';
-  
+
   $output = drupal_render(drupal_get_form('ares_search_form'));
   $output .= ares_output_course_select($library, $style);
   $output .= ares_output_course_items($library, $style);
   $output .= ares_output_unobtrusive_js($library, $course, $style);
-  
+
   return $output;
 }
 
@@ -414,7 +414,7 @@ function ares_cron() {
 /****************** Search field functionality ****************/
 
 function ares_search_form($form, &$form_state) {
-  
+
   $form['search_box'] = array(
     '#type' => 'textfield',
     '#id' => 'search_box',
@@ -426,13 +426,13 @@ function ares_search_form($form, &$form_state) {
     '#maxlength' => 255,
     '#prefix' => '<label class="sr-only" for="search_box">Search course reserves</label>'
   );
-  
+
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Search'),
     '#attributes' => array('class' => array('go')),
   );
-  
+
   return $form;
 }
 
@@ -458,15 +458,15 @@ function ares_search_list($query) {
 Please check that you have correctly entered the course number, course name, or instructor. If reserve requests have been submitted, they may be in-progress and show up here shortly. If you or your instructor are expecting reserve items to be available now for this course, please <a href="mailto:culreserves-l@cornell.edu">notify us</a>.', 'error');
   }
   elseif (count($courses) > 1) {
-    
+
     usort($courses, '_ares_sort_course_names');
     $displayCourseId = $courses[0]->id;
-    
-    # This code is used to create links to alternate sections for the user. 
-    # Since the first course in the list is already displayed as the primary 
+
+    # This code is used to create links to alternate sections for the user.
+    # Since the first course in the list is already displayed as the primary
     # result, there's no need to link to it here.
     array_shift($courses);
-    
+
     $sectionLinks = array();
     foreach ($courses as $course) {
       $sectionQuery = $course->displayCourseNumber . '.' . $course->classCode;
@@ -474,7 +474,7 @@ Please check that you have correctly entered the course number, course name, or 
       $link .= $course->displayCourseNumber;
       if ($course->classCode && $course->classCode != ' ') {
         $link .= '.' . $course->classCode;
-      } 
+      }
       else {
         #$sectionLinks .= '.---';
       }
@@ -491,14 +491,14 @@ Please check that you have correctly entered the course number, course name, or 
     $messageText .= '</ul>';
     drupal_set_message($messageText, 'warning');
   }
-  
+
   return ares_page('all', $displayCourseId);
 
 }
 
 /*
  * This function is called both by the main search menu callback (ares_search_list)
- * and the autocomplete function (ares_autocomplete). It looks for matches of 
+ * and the autocomplete function (ares_autocomplete). It looks for matches of
  * $query with course titles, numbers, departments, or instructors
  */
 function ares_search_reserves($query) {
@@ -512,30 +512,30 @@ function ares_search_reserves($query) {
   $data = json_decode($data);
   $results = array();
   foreach ($data->courseList as $course) {
-    
+
     $fullCourseTitle = $course->displayCourseNumber . ': ' . $course->courseName;
     $sectionCourseTitle = $course->displayCourseNumber . '.' . $course->classCode;
-    
-    # course numbers are in the form ABCD 1234, but people might type in 
+
+    # course numbers are in the form ABCD 1234, but people might type in
     # ABCD1234 without the space. Find hits for both
     $spacelessCourseNumber = str_replace(' ', '', $course->displayCourseNumber);
     $spacelessQuery = str_replace(' ', '', $query);
     $extendedCourseInfo = _ares_make_extended_course_name($course);
-    
+
     if ((stripos($course->courseName, $query) !== FALSE) ||
         (stripos($spacelessCourseNumber, $spacelessQuery) !== FALSE) ||
         # It's very unlikely that anyone will type in a full course number and
         # name, but this next line helps when a user selects an autocomplete option
         # to search on.
         (stripos($fullCourseTitle, $query) !== FALSE) ||
-        
+
         # similarly, we need the extended course name with section and instructor
         # info to match the new autocomplete list format
         (stripos($extendedCourseInfo, $query) !== FALSE) ||
-        
+
         # and now they want to be able to handle a course name AND section
         (stripos($sectionCourseTitle, $query) !== FALSE) ||
-        
+
         (stripos($course->courseNumber, $query) !== FALSE) ||
         (stripos($course->instructor, $query) !== FALSE) ||
         (stripos($course->department, $query) !== FALSE)) {
@@ -568,9 +568,9 @@ function ares_autocomplete($query) {
  * ENGL 1147: Writing About Stuff [Sec. 102: Smythe]
  */
 function _ares_make_extended_course_name($course) {
-  
+
   $combinedCourseName = $course->displayCourseNumber . ': ' . $course->courseName;
-  
+
   // Add section number and instructor, if available, to distinguish identical
   // course numbers
   $additional_id = '';
@@ -587,7 +587,7 @@ function _ares_make_extended_course_name($course) {
   if ($additional_id != '') {
     $additional_id = "[$additional_id]";
   }
-  
+
   return $combinedCourseName . ' ' . $additional_id;
 }
 
@@ -597,7 +597,7 @@ function _ares_sort_course_names($a, $b) {
   $bName = $b->displayCourseNumber;
   $aSection = $a->classCode;
   $bSection = $b->classCode;
-  
+
   if ($aName == $bName) {
     if ($aSection == $bSection) { return 0; }
     return ($aSection < $bSection) ? -1 : 1;
