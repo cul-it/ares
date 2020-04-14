@@ -450,7 +450,7 @@ function ares_search_form($form, &$form_state) {
 
 function ares_search_form_validate($form, &$form_state) {
    if ($form_state['values']['search_box'] == '') {
-      form_set_error('search_box', t('This field cannot be empty.'));
+      form_set_error('search_box', t('This search field cannot be empty.'));
       $form_state['rebuild'] = TRUE;
    }
 }
