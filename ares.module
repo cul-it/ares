@@ -383,15 +383,15 @@ function get_course_title_json($library, $course) {
         $course_title = '';
         if ($acourse->{"id"} == $course) {
           $course_title .= $acourse->{"displayCourseNumber"} . ': ' . $acourse->{"courseName"};
-          if (trim($acourse->{"classCode"}) != '') {
-            $course_title .= '<div>Section ' . $acourse->{"classCode"} . '</div>';
+          if (trim($acourse->{"courseCode"}) != '') {
+            $course_title .= '<div>Section ' . $acourse->{"courseCode"} . '</div>';
           }
           if (trim($acourse->{"instructor"}) != '') {
             $course_title .= '<div>Instructor: ' . $acourse->{"instructor"} . '</div>';
           }
         }
         if ($course_title != '') {
-          $course_titles[strtoupper(trim($acourse->{"displayCourseNumber"})) . strtoupper(trim($acourse->{"classCode"}))] = $course_title;
+          $course_titles[strtoupper(trim($acourse->{"displayCourseNumber"})) . strtoupper(trim($acourse->{"courseCode"}))] = $course_title;
         }
       }
       ksort($course_titles);
@@ -481,11 +481,11 @@ Please check that you have correctly entered the course number, course name, or 
 
     $sectionLinks = array();
     foreach ($courses as $course) {
-      $sectionQuery = $course->displayCourseNumber . '.' . $course->classCode;
+      $sectionQuery = $course->displayCourseNumber . '.' . $course->courseCode;
       $link = "<a href=\"/ares/search/$sectionQuery\">";
       $link .= $course->displayCourseNumber;
-      if ($course->classCode && $course->classCode != ' ') {
-        $link .= '.' . $course->classCode;
+      if ($course->courseCode && $course->courseCode != ' ') {
+        $link .= '.' . $course->courseCode;
       }
       else {
         #$sectionLinks .= '.---';
@@ -526,7 +526,7 @@ function ares_search_reserves($query) {
   foreach ($data->courseList as $course) {
 
     $fullCourseTitle = $course->displayCourseNumber . ': ' . $course->courseName;
-    $sectionCourseTitle = $course->displayCourseNumber . '.' . $course->classCode;
+    $sectionCourseTitle = $course->displayCourseNumber . '.' . $course->courseCode;
 
     # course numbers are in the form ABCD 1234, but people might type in
     # ABCD1234 without the space. Find hits for both
@@ -586,8 +586,8 @@ function _ares_make_extended_course_name($course) {
   // Add section number and instructor, if available, to distinguish identical
   // course numbers
   $additional_id = '';
-  if ($course->classCode and $course->classCode != ' ') {
-    $additional_id = 'Sec ' . $course->classCode;
+  if ($course->courseCode and $course->courseCode != ' ') {
+    $additional_id = 'Sec ' . $course->courseCode;
   }
   if ($course->instructor and $course->instructor != ' ') {
     if ($additional_id != '') {
@@ -607,8 +607,8 @@ function _ares_make_extended_course_name($course) {
 function _ares_sort_course_names($a, $b) {
   $aName = $a->displayCourseNumber;
   $bName = $b->displayCourseNumber;
-  $aSection = $a->classCode;
-  $bSection = $b->classCode;
+  $aSection = $a->courseCode;
+  $bSection = $b->courseCode;
 
   if ($aName == $bName) {
     if ($aSection == $bSection) { return 0; }
