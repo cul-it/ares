@@ -1,0 +1,619 @@
+<?php
+
+require_once(dirname(__FILE__) . '/config.php');
+require_once(dirname(__FILE__) . '/common.php');
+
+/**
+ * Implementation of hook_init().
+ */
+function ares_init() {
+  if (drupal_is_front_page()) {
+    drupal_add_css(drupal_get_path('module', 'ares') . '/table_skins/cu/ares-table-cu-style.css');
+    drupal_add_css(drupal_get_path('module', 'ares') . '/ares.css');
+    drupal_add_js(drupal_get_path('module', 'ares') . '/ares.js'); // added here so it works on home page too
+  }
+}
+
+/**
+ * Implementation of hook_permission().
+ */
+function ares_permission() {
+  return array('Administer Ares' => array('title' => 'Administer Ares'));
+}
+
+
+/**
+ * Implementation of hook_menu().
+ */
+function ares_menu() {
+  $items['admin/structure/ares'] = array(
+    'title' => 'Ares Locations',
+    'description' => "Configure which Ares locations to use on this site.",
+    'page callback' => 'ares_admin_overview',
+    'access arguments' => array('Administer Ares'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'ares.admin.inc',
+  );
+  $items['admin/structure/ares/add'] = array(
+    'title' => 'Add Ares Location',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ares_form_location'),
+    'access arguments' => array('Administer Ares'),
+    'type' => MENU_NORMAL_ITEM,
+    'parent' => 'admin/structure/ares',
+    'file' => 'ares.admin.inc',
+  );
+  $items['admin/structure/ares/edit/%ares_location'] = array(
+    'title' => 'Edit Ares Location',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ares_form_location', 4),
+    'access arguments' => array('Administer Ares'),
+    'type' => MENU_CALLBACK,
+    'parent' => 'admin/structure/ares',
+    'file' => 'ares.admin.inc',
+  );
+#  $items['ares/items/%'] = array(
+#    'title' => '',
+#    'page callback' => 'drupal_get_form',
+#    'page arguments' => array('ares_form_location', 2),
+#    'access arguments' => array('Administer Ares'),
+#    'type' => MENU_CALLBACK,
+#    'parent' => 'admin/structure/ares',
+#    'file' => 'ares.admin.inc',
+#  );
+  $items['ares/get_courses_json/%'] = array(
+    'title' => 'Get courses for a library as JSON data.',
+    'page callback' => 'get_courses_json',
+    'page arguments' => array(2),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['ares/get_course_title_json/%/%'] = array(
+    'title' => 'Get title and author information for a course as JSON data.',
+    'page callback' => 'get_course_title_json',
+    'page arguments' => array(2, 3),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['ares/get_items_json/%'] = array(
+    'title' => 'Get items for a course as JSON data.',
+    'page callback' => 'get_items_json',
+    'page arguments' => array(2),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['ares/library/%'] = array(
+    'title' => 'Course Reserves',
+    'page callback' => 'ares_page',
+    'page arguments' => array(2),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['ares/library/%/course'] = array(
+    'title' => 'Course Reserves',
+    'page callback' => 'ares_page',
+    'page arguments' => array(2),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['ares/search'] = array(
+    'title' => 'Search Course Reserves',
+    'page callback' => 'ares_search_list',
+    'page arguments' => array(2),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK
+  );
+  $items['ares/autocomplete'] = array(
+     'title' => 'Ares Autocomplete',
+     'page callback' => 'ares_autocomplete',
+     'page arguments' => array(2),
+     'access arguments' => array('access content'),
+     'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_help().
+ */
+function ares_help($path, $arg) {
+  switch ($path) {
+    case 'admin/structure/ares':
+      return '<p>' . t('Current Ares locations are listed below, and <a href="@addares">new Ares locations may be added</a>. For each Ares location, a block may be enabled at the <a href="@block">blocks administration page</a>.', array('@addares' => url('admin/structure/ares/add'), '@block' => url('admin/structure/block'))) . '</p>';
+  }
+}
+
+/**
+ * Implementation of hook_block_info().
+ */
+function ares_block_info() {
+    $blocks = array();
+    $result = db_query("SELECT alid, name FROM {ares_location} ORDER BY name");
+    foreach ($result as $location) {
+        $blocks['location-'. $location->alid . '-separate']['info'] = t('!name Library Ares reserves (results display separately)', array('!name' => ucwords(strtolower($location->name))));
+        $blocks['location-'. $location->alid . '-separate']['pages'] = 'ares/library/*';
+        $blocks['location-'. $location->alid . '-inline']['info'] = t('!name Library Ares reserves (results display inline)', array('!name' => ucwords(strtolower($location->name))));
+    }
+    $blocks['ares-front-page']['info'] = t('Front-page block for Ares course search');
+
+    return $blocks;
+}
+
+
+/**
+ * Implementation of hook_block_save().
+ */
+function ares_block_save ($delta = '', $edit=array()) {
+    //$value = db_query("UPDATE {ares_location} SET block = :block WHERE alid = :alid", array(':block' => $edit['block'], ':alid' => $id))->fetchObject();
+    $value = db_update('ares_location')
+               ->fields(array('block' => $edit['block']))
+               ->condition('alid', $id, '=')
+               ->execute();
+}
+
+
+/**
+ * Implementation of hook_block_view().
+ */
+function ares_block_view ($delta = '') {
+
+    if ($delta == 'ares-front-page') {
+      $block['title'] = 'Courses';
+      $block['content'] = drupal_get_form('ares_search_form');
+      return $block;
+    }
+    else {
+      list($type, $id, $style) = explode('-', $delta);
+      $location = db_query("SELECT alid, name, block FROM {ares_location} WHERE alid = :alid", array(':alid' => $id))->fetchObject();
+      if (isset($location->name)) {
+          $block['subject'] = check_plain(ucwords(strtolower($location->name)) . ' Course Reserves');
+          $block['content'] = ares_block_course_select($location->name, $style);
+          return $block;
+      }
+    }
+}
+
+
+/**
+ * Load an Ares location.
+ *
+ * @param $alid
+ *   The Ares location id.
+ * @return
+ *   An associative array describing the Ares location.
+ */
+function ares_location_load($alid) {
+  static $ares_locations;
+  if (!isset($ares_locations[$alid])) {
+    $ares_locations[$alid] = db_query("SELECT * FROM {ares_location} WHERE alid = :alid", array(':alid' => $alid))->fetchObject();
+  }
+  return $ares_locations[$alid];
+}
+
+/**
+ * Add/edit/delete Ares locations.
+ *
+ * @param $edit
+ *   An associative array describing the location to be added/edited/deleted.
+ */
+function ares_save_location($edit) {
+  $link_path = 'admin/structure/ares/edit/location/';
+  if (!empty($edit['alid'])) {
+    $link_path .= $edit['alid'];
+    if (!empty($edit['name'])) {
+      //db_query("UPDATE {ares_location} SET name = ':name' WHERE alid = :alid", array(':name' => $edit['name'], ':alid' => $edit['alid']));
+      db_update('ares_location')
+        ->fields(array('name' => $edit['name']))
+        ->condition('alid', $edit['alid'])
+        ->execute();
+      $op = 'update';
+    }
+    else {
+      //db_query("DELETE FROM {ares_location} WHERE alid = :alid", array(':alid' => $edit['alid']));
+      db_delete('ares_location')->condition('alid', $edit['alid'])->execute();
+      // Make sure there is no active block for this location.
+      //db_query("DELETE FROM {blocks} WHERE module = ':module' AND delta = ':delta'", array(':module' => 'ares', ':delta' => 'location-' . $edit['alid']));
+      db_delete('block')
+        ->condition(db_and()->condition('module', 'ares')->condition('delta', 'location-' . $edit['alid']))
+        ->execute();
+      $edit['name'] = '';
+      $op = 'delete';
+    }
+  }
+  else if (!empty($edit['name'])) {
+    // A single unique id for bundles and feeds, to use in blocks
+    $id = db_insert('ares_location')
+            ->fields(array('name'  => $edit['name'],
+                           'block' => 5))
+            ->execute();
+    $link_path .= $id;
+    $op = 'insert';
+  }
+}
+
+
+function ares_page($library='ALL', $course=NULL) {
+  $style='inline';
+
+  $form = drupal_get_form('ares_search_form');
+  $output = drupal_render($form); // pass by reference
+  $output .= ares_output_course_select($library, $style);
+  $output .= ares_output_course_items($library, $style);
+  $output .= ares_output_unobtrusive_js($library, $course, $style);
+
+  return $output;
+}
+
+function ares_block_course_select($library, $style) {
+  $output = ares_output_course_select($library, $style);
+  $output .= ares_output_course_items($library, $style);
+  $output .= ares_output_unobtrusive_js($library, NULL, $style);
+  return $output;
+}
+
+# NOTE: two elements in the output here have been hidden — the
+# drop-down select and the label — because they shouldn't be
+# visible to the user, but JS doesn't seem to work without them
+function ares_output_course_select($library, $style) {
+  $spinner_src = base_path() . drupal_get_path('module', 'ares') . '/loading.gif';
+  $submit_url = url('ares/get_courses_json/' . $library);
+  $form_url = url('ares/library');
+  $output = <<<HERE
+<div id="emergency-message">
+NOTE: Gov. Cuomo has mandated that staff stay home from all non-essential businesses in
+the state of New York, which applies to all of our libraries. <strong>Although we are no longer able to
+circulate physical materials or supply new scanning or digitization services for items held in
+the Cornell Library, we are still able to supply many items electronically.</strong> If a physical-only
+reserve item shown here is needed for your course it may also be available as an e-resource
+via the
+<a href="https://www.library.cornell.edu" aria-label="library catalog web site">Library Catalog</a>.
+E-books may also be requested via the
+<a href="https://www.library.cornell.edu/services/request/recommend" aria-label="web form for requesting an e-book purcase">Recommend A Purchase</a> form.
+</div>
+<a href="$submit_url" id="courselist-link-$library-$style"></a>
+<form action="$form_url" accept-charset="UTF-8" method="get"
+      id="courselist-form-$library-$style" class="courselist-form">
+    <div class="form-item edit-courselist-wrapper" id="edit-courselist-wrapper-$library-$style">
+      <label for="edit-courselist" class="hidden">Select a course: </label>
+      <span id="course-spinner-$library-$style"><img src="$spinner_src"> Loading...</span>
+      <input type="hidden" name="library" value="$library">
+      <select name="course" class="form-select edit-courselist hidden" id="edit-courselist-$library-$style" style="display: none">
+      </select>
+    </div>
+
+</form>
+HERE;
+    return $output;
+
+}
+
+function ares_output_course_items($library, $style) {
+  $spinner_src = base_path() . drupal_get_path('module', 'ares') . '/loading.gif';
+  $items_url = url('ares/get_items_json/');
+  $title_url = url('ares/get_course_title_json/');
+  $output = <<<HERE
+    <span id="items-spinner-$library-$style" style="display: none"><img src="$spinner_src"> Loading...</span>
+    <a href="$items_url" id="itemlist-link-$library-$style-items"></a>
+    <a href="$title_url" id="itemlist-link-$library-$style-title"></a>
+    <div id="reserve-items-$library-$style"
+         class="reserve-items"
+         style="display: none">
+
+        <h3></h3>
+
+        <table id="course-reserves-$library-$style" class="tablesorter standard course-reserves sticky-enabled table table-striped table-responsive">
+            <thead>
+                <tr>
+                    <th class="item">Title</th>
+                    <th class="author">Author</th>
+                    <th class="callnumber">Location/Call Number</th>
+                    <th class="status">Due Back</th>
+                 </tr>
+             </thead>
+            <tbody>
+
+            </tbody>
+        </table>
+
+    </div>
+HERE;
+    return $output;
+}
+
+function ares_output_unobtrusive_js($library, $course=NULL, $style='inline') {
+  drupal_add_js(drupal_get_path('module', 'ares') . '/ares.js');
+  drupal_add_js(drupal_get_path('module', 'ares') . '/jquery.tablesorter.min.js');
+  drupal_add_js(drupal_get_path('module', 'ares') . '/moment.min.js');
+
+  #drupal_add_js(array('ares' => array('library' => $library)), 'setting');
+    $output = <<<HERE
+        <script>
+          // document.ready() slows page loading
+          //$(document).ready(function () {
+          jQuery(window).load(function () {
+            populate_course_selector("$library", "$course", "$style");
+            jQuery("#course-reserves-$library-$style").tablesorter({sortList: [[0,0]] , widgets:["zebra"]});
+          });
+        </script>
+HERE;
+    return $output;
+}
+
+
+/**
+ * Call get_courses_json() via URL, return JSON.
+ *
+ */
+function get_courses_json($library) {
+    global $courses_url;
+    static $ares_courses_json;
+    $cid = 'ares_courses_' . $library;
+    $url = $courses_url . $library;
+    $ares_courses_json = get_and_cache_json($cid, $url);
+    output_json_string($ares_courses_json);
+}
+
+/**
+ * Call get_items_json() via URL, return JSON.
+ *
+ */
+function get_items_json($course) {
+    global $reserves_url;
+    static $ares_json;
+    $url = $reserves_url . $course;
+    $ares_json = get_json($url);
+    output_json_string($ares_json);
+}
+
+function get_course_title_json($library, $course) {
+    global $courses_url;
+    static $ares_course_title_json;
+    $cid = 'ares_courses_' . $library;
+    $url = $courses_url . $library;
+    $ares_course_title_json = get_and_cache_json($cid, $url);
+
+    $json = '';
+    $course_cid = 'ares_course_title_' . $course;
+    if (($cached = cache_get($course_cid, 'cache')) && ! empty($cached->data)) {
+        $json = $cached->data;
+    } else {
+      $courses = json_decode($ares_course_title_json)->{"courseList"};
+      $course_titles = array();
+      foreach ($courses as $acourse) {
+        $course_title = '';
+        if ($acourse->{"id"} == $course) {
+          $course_title .= $acourse->{"displayCourseNumber"} . ': ' . $acourse->{"courseName"};
+          if (trim($acourse->{"courseCode"}) != '') {
+            $course_title .= '<div>Section ' . $acourse->{"courseCode"} . '</div>';
+          }
+          if (trim($acourse->{"instructor"}) != '') {
+            $course_title .= '<div>Instructor: ' . $acourse->{"instructor"} . '</div>';
+          }
+        }
+        if ($course_title != '') {
+          $course_titles[strtoupper(trim($acourse->{"displayCourseNumber"})) . strtoupper(trim($acourse->{"courseCode"}))] = $course_title;
+        }
+      }
+      ksort($course_titles);
+      $json = '{"value" : "' . join("<br/>", $course_titles) . '"}';
+      cache_set($course_cid, $json, 'cache');
+    }
+    output_json_string($json);
+}
+
+function cache_all_courses() {
+    global $courses_url;
+    $library = 'ALL';
+    $cid = 'ares_courses_' . $library;
+    $url = $courses_url . $library;
+    get_and_cache_json($cid, $url);
+}
+
+function cache_all_libraries() {
+  global $libraries_url;
+  get_and_cache_json('ares_libraries', $libraries_url);
+}
+
+/**
+ * Implementation of hook_cron().
+ */
+function ares_cron() {
+  cache_clear_all('ares', 'cache', TRUE);
+  cache_all_courses();
+  cache_all_libraries();
+}
+
+/****************** Search field functionality ****************/
+
+function ares_search_form($form, &$form_state) {
+
+  $form['search_box'] = array(
+    '#type' => 'textfield',
+    '#id' => 'search_box',
+    '#name' => 'search_box',
+    '#autocomplete_path' => 'ares/autocomplete',
+    '#attributes' => array('class'=> array('auto_submit')),
+    //'#default_value' => 'peanut butter',
+    '#size' => 15,
+    '#maxlength' => 255,
+    '#prefix' => '<label class="sr-only" for="search_box">Search course reserves</label>'
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Search'),
+    '#attributes' => array('class' => array('go')),
+  );
+
+  return $form;
+}
+
+function ares_search_form_validate($form, &$form_state) {
+   if ($form_state['values']['search_box'] == '') {
+      form_set_error('search_box', t('This search field cannot be empty.'));
+      $form_state['rebuild'] = TRUE;
+   }
+}
+
+function ares_search_form_submit($form, &$form_state) {
+   $form_state['redirect'] = 'ares/search/' . $form_state['values']['search_box'];
+}
+
+function ares_search_list($query) {
+  $courses = ares_search_reserves(urldecode($query));
+  //$displayCourseId = '';
+  $displayCourseId = (empty($courses) ? NULL : $courses[0]->id); # The course to show as the main result
+  drupal_get_messages(); // Empty the message queue
+
+  if (count($courses) == 0) {
+    drupal_set_message('No current course reserve items were found.
+Please check that you have correctly entered the course number, course name, or instructor. If reserve requests have been submitted, they may be in-progress and show up here shortly. If you or your instructor are expecting reserve items to be available now for this course, please <a href="mailto:culreserves-l@cornell.edu">notify us</a>.', 'error');
+  }
+  elseif (count($courses) > 1) {
+
+    usort($courses, '_ares_sort_course_names');
+    $displayCourseId = $courses[0]->id;
+
+    # This code is used to create links to alternate sections for the user.
+    # Since the first course in the list is already displayed as the primary
+    # result, there's no need to link to it here.
+    array_shift($courses);
+
+    $sectionLinks = array();
+    foreach ($courses as $course) {
+      $sectionQuery = $course->displayCourseNumber . '.' . $course->courseCode;
+      $link = "<a href=\"/ares/search/$sectionQuery\">";
+      $link .= $course->displayCourseNumber;
+      if ($course->courseCode && $course->courseCode != ' ') {
+        $link .= '.' . $course->courseCode;
+      }
+      else {
+        #$sectionLinks .= '.---';
+      }
+      if ($course->instructor && strlen($course->instructor) > 1) {
+        $link .= ' (' . $course->instructor . ')';
+      }
+      $link .= '</a>';
+      $sectionLinks[] = $link;
+    }
+    $messageText = 'NOTE: Your search matched multiple courses/sections. The first match appears below. If you are looking for a different section, try one of the following links.<ul>';
+    foreach ($sectionLinks as $link) {
+      $messageText .= "<li>$link</li>";
+    }
+    $messageText .= '</ul>';
+    drupal_set_message($messageText, 'warning');
+  }
+
+  return ares_page('all', $displayCourseId);
+
+}
+
+/*
+ * This function is called both by the main search menu callback (ares_search_list)
+ * and the autocomplete function (ares_autocomplete). It looks for matches of
+ * $query with course titles, numbers, departments, or instructors
+ */
+function ares_search_reserves($query) {
+  global $courses_url;
+  $url = $courses_url . 'ALL';
+  $data = get_and_cache_json('ares_courses_ALL', $url);
+  // $output =  "raw: " . print_r($data,1);
+  // return $output;
+  // exit(0);
+
+  $data = json_decode($data);
+  $results = array();
+  foreach ($data->courseList as $course) {
+
+    $fullCourseTitle = $course->displayCourseNumber . ': ' . $course->courseName;
+    $sectionCourseTitle = $course->displayCourseNumber . '.' . $course->courseCode;
+
+    # course numbers are in the form ABCD 1234, but people might type in
+    # ABCD1234 without the space. Find hits for both
+    $spacelessCourseNumber = str_replace(' ', '', $course->displayCourseNumber);
+    $spacelessQuery = str_replace(' ', '', $query);
+    $extendedCourseInfo = _ares_make_extended_course_name($course);
+
+    if ((stripos($course->courseName, $query) !== FALSE) ||
+        (stripos($spacelessCourseNumber, $spacelessQuery) !== FALSE) ||
+        # It's very unlikely that anyone will type in a full course number and
+        # name, but this next line helps when a user selects an autocomplete option
+        # to search on.
+        (stripos($fullCourseTitle, $query) !== FALSE) ||
+
+        # similarly, we need the extended course name with section and instructor
+        # info to match the new autocomplete list format
+        (stripos($extendedCourseInfo, $query) !== FALSE) ||
+
+        # and now they want to be able to handle a course name AND section
+        (stripos($sectionCourseTitle, $query) !== FALSE) ||
+
+        (stripos($course->courseNumber, $query) !== FALSE) ||
+        (stripos($course->instructor, $query) !== FALSE) ||
+        (stripos($course->department, $query) !== FALSE)) {
+      $results[] = $course;
+    }
+  }
+  return $results;
+}
+
+function ares_autocomplete($query) {
+  $courses = ares_search_reserves($query);
+  // echo "courses: " .print_r($courses,1);
+  // return 0;
+  $output = array();
+  foreach ($courses as $course) {
+    $courseId = _ares_make_extended_course_name($course);
+    $output[$courseId] = $courseId;
+  }
+  asort($output);
+  drupal_json_output($output);
+}
+
+/*
+ * Helper function that takes in a course hash and returns a long-form
+ * name for it consisting of course number, course name, section number,
+ * and instructor name — or as many of those parts as are available.
+ * Output looks like:
+ *  <DEPT> <NUMBER>: <NAME> [Sec. <NUMBER>: <INSTRUCTOR>]
+ * e.g.,
+ * ENGL 1147: Writing About Stuff [Sec. 102: Smythe]
+ */
+function _ares_make_extended_course_name($course) {
+
+  $combinedCourseName = $course->displayCourseNumber . ': ' . $course->courseName;
+
+  // Add section number and instructor, if available, to distinguish identical
+  // course numbers
+  $additional_id = '';
+  if ($course->courseCode and $course->courseCode != ' ') {
+    $additional_id = 'Sec ' . $course->courseCode;
+  }
+  if ($course->instructor and $course->instructor != ' ') {
+    if ($additional_id != '') {
+      $additional_id .= ': ';
+    }
+    list($lastName) = explode(',', $course->instructor);
+    $additional_id .= $lastName;
+  }
+  if ($additional_id != '') {
+    $additional_id = "[$additional_id]";
+  }
+
+  return $combinedCourseName . ' ' . $additional_id;
+}
+
+
+function _ares_sort_course_names($a, $b) {
+  $aName = $a->displayCourseNumber;
+  $bName = $b->displayCourseNumber;
+  $aSection = $a->courseCode;
+  $bSection = $b->courseCode;
+
+  if ($aName == $bName) {
+    if ($aSection == $bSection) { return 0; }
+    return ($aSection < $bSection) ? -1 : 1;
+  }
+  return ($aName < $bName) ? -1 : 1;
+}

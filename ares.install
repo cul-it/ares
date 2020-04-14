@@ -1,0 +1,38 @@
+<?php
+
+/**
+ * Implementation of hook_schema().
+ */
+function ares_schema() {
+    $schema['ares_location'] = array(
+    'fields' => array(
+        'alid' => array(
+            'type' => 'serial',
+            'length' => 12,
+            'not null' => TRUE,
+            'description' => 'Ares location ID.',
+         ),
+        'name' => array(
+            'type' => 'varchar',
+            'length' => 255,
+            'not null' => TRUE,
+            'default' => '',
+            'description' => 'Ares location name.',
+         ),
+         'block' => array(
+            'type' => 'int',
+            'size' => 'tiny',
+            'length' => 50,
+            'not null' => TRUE,
+            'default' => 0,
+            'description' => 'Block ID.',
+         ),
+     ),
+     'indexes' => array(
+        'name' => array('name'),
+     ),
+     'primary key' => array('alid',),
+    );
+    return $schema;
+}
+
