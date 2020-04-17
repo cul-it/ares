@@ -251,6 +251,23 @@ function ares_block_course_select($library, $style) {
   return $output;
 }
 
+/**
+ * show block containing emergency message
+ * This is a regular block with the text entered by content people
+ * to be displayed above the search results
+ * see https://www.drupal.org/project/drupal/issues/957038
+ */
+function ares_block_emergency_message() {
+  $block_id = 50;
+  $block = block_load('block', $block_id);
+  if (empty($block->bid) === false) {
+    $block_element = _block_get_renderable_array(_block_render_blocks(array($block)));
+    $output = drupal_render($block_element);
+    return $output;
+  }
+  return '';
+}
+
 # NOTE: two elements in the output here have been hidden — the
 # drop-down select and the label — because they shouldn't be
 # visible to the user, but JS doesn't seem to work without them
@@ -258,18 +275,8 @@ function ares_output_course_select($library, $style) {
   $spinner_src = base_path() . drupal_get_path('module', 'ares') . '/loading.gif';
   $submit_url = url('ares/get_courses_json/' . $library);
   $form_url = url('ares/library');
-  $output = <<<HERE
-<div id="emergency-message">
-NOTE: Gov. Cuomo has mandated that staff stay home from all non-essential businesses in
-the state of New York, which applies to all of our libraries. <strong>Although we are no longer able to
-circulate physical materials or supply new scanning or digitization services for items held in
-the Cornell Library, we are still able to supply many items electronically.</strong> If a physical-only
-reserve item shown here is needed for your course it may also be available as an e-resource
-via the
-<a href="https://www.library.cornell.edu" aria-label="library catalog web site">Library Catalog</a>.
-E-books may also be requested via the
-<a href="https://www.library.cornell.edu/services/request/recommend" aria-label="web form for requesting an e-book purcase">Recommend A Purchase</a> form.
-</div>
+  $output = ares_block_emergency_message();
+  $output .= <<<HERE
 <a href="$submit_url" id="courselist-link-$library-$style"></a>
 <form action="$form_url" accept-charset="UTF-8" method="get"
       id="courselist-form-$library-$style" class="courselist-form">
